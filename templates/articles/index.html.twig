@@ -1,0 +1,95 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Hello !
+{% endblock %}
+
+{% block body %}
+    {{ parent() }}
+    <div class="row"><h3>list articles</h3><small>highload.today/category/novosti/</small></div>
+    <div class="row"><div class="col-lg-12"><table id="grid" ></table></div></div><br/>
+{% endblock %}
+
+{% block javascripts %}
+
+{% if is_granted('IS_AUTHENTICATED_FULLY') %}
+<!--<p>Email: {{ app.user.email }}</p>-->
+{% endif %}
+    {{ parent() }}
+
+    <script > 
+
+        $(document).ready(function() {
+            $("#grid").kendoGrid({
+                dataSource: {
+                    type: "json",
+                    transport: {
+                        read: "{{ path('listingArticles')}}",
+                    },
+                    schema: {
+                    data: function (data) {return data.data;},
+                    total: function (data) {return data.totalRows;},
+                    model: {
+                            fields: {
+                                id: { type: "number" },
+                                title: { type: "string" },
+                                description: { type: "string" },
+                                picture: { type: "string" },
+                                dateAdded: { type: "date" },
+                                dateUpdate: { type: "date" },
+                            }
+                        }
+                    },
+                    pageSize: 10,
+                    serverPaging: true,
+                    serverFiltering: true,
+                    serverSorting: true,
+
+                },
+                height: 550,
+                //filterable: true,
+                sortable: true,
+                pageable: {
+                        refresh: true,
+                        pageSizes: [5,10,20],
+                        buttonCount: 5
+                },
+                columns: [
+                    //{field:"id",filterable: false},
+                    {field:"title"},
+                    {
+                        field: "dateAdded",
+                        title: "date Added",
+                        format: "{0:MM/dd/yyyy}"
+                    },{
+                        field: "dateUpdate",
+                        title: "date Update",
+                        format: "{0:MM/dd/yyyy}"
+                    }, {
+                        field: "picture",
+                        title: "picture"
+                    }, {
+                        field: "description",
+                        title: "description"
+                    },
+                    {% if is_granted('ROLE_ADMIN') %}
+                        //{ command: ["edit", "destroy"], title: "&nbsp;", width: "250px" }
+                        { command: { text: "delete", click: function(e){
+                            if (confirm("sure to remove!") == true) {
+
+                                var dataItem = this.dataItem($(e.currentTarget).closest("tr"));
+                                callAjax("/admin/articles/"+dataItem.id,method="delete", body={}, doneCallback = function(){
+                                    $('#grid').data('kendoGrid').dataSource.read(); 
+                                    $('#grid').data('kendoGrid').refresh(); 
+                                    alert(  "removed");
+                                })
+
+                            } else alert("delete canceled")
+                            
+                        } }, title: " ", width: "180px" }
+                    {% endif %}
+                ]
+            });
+        });
+    </script>
+
+{% endblock %}
